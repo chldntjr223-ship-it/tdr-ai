@@ -32,19 +32,27 @@ st.markdown("""
         color: #0f172a;
     }
     
-    /* Main container max-width 1150px and centered */
+    /* Main container max-width 1500px and centered */
     .block-container {
-        padding-top: 1.0rem !important;
-        padding-bottom: 2.0rem !important;
-        max-width: 1150px !important;
+        padding-top: 1.8rem !important;
+        padding-bottom: 2.5rem !important;
+        max-width: 1500px !important;
         margin-left: auto !important;
         margin-right: auto !important;
     }
     
-    /* Clean sidebar styling */
-    [data-testid="stSidebar"] {
+    /* Slim sidebar styling (200px) */
+    [data-testid="stSidebar"], section[data-testid="stSidebar"] {
+        width: 200px !important;
+        min-width: 200px !important;
+        max-width: 200px !important;
         background-color: #f8fafc;
         border-right: 1px solid #e2e8f0;
+    }
+    [data-testid="stSidebarContent"], section[data-testid="stSidebar"] > div {
+        width: 200px !important;
+        min-width: 200px !important;
+        padding: 1.5rem 0.8rem !important;
     }
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
@@ -52,10 +60,10 @@ st.markdown("""
     
     /* Compact File Uploader */
     [data-testid="stFileUploader"] {
-        margin-bottom: 0.5rem;
+        margin-bottom: 1.2rem;
     }
     [data-testid="stFileUploader"] section {
-        padding: 0.6rem 1.0rem !important;
+        padding: 0.7rem 1.2rem !important;
         border: 1px dashed #cbd5e1;
         background-color: #ffffff;
         border-radius: 8px;
@@ -69,13 +77,13 @@ st.markdown("""
         background: #ffffff;
         border: 1px solid #e2e8f0;
         border-radius: 10px;
-        padding: 12px 18px;
-        margin-bottom: 8px;
+        padding: 12px 20px;
+        margin-bottom: 10px;
         display: flex;
         justify-content: space-between;
         align-items: center;
         box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
-        height: 82px;
+        height: 80px;
         box-sizing: border-box;
     }
     .prop-card:hover {
@@ -89,11 +97,11 @@ st.markdown("""
         border: 1px solid #0f172a;
         border-radius: 8px;
         font-weight: 600;
-        padding: 0.55rem 1.2rem;
+        padding: 0.6rem 1.2rem;
         height: 44px;
         width: 100%;
         transition: all 0.15s ease-in-out;
-        margin-top: 4px;
+        margin-top: 6px;
     }
     .stDownloadButton > button:hover {
         background-color: #1e293b;
@@ -158,16 +166,16 @@ def render_result_card(icon_svg, title, value_str, unit_str):
 # ==============================================================================
 with st.sidebar:
     st.markdown("""
-<div style="font-size:0.75rem; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:#64748b; margin-bottom:10px;">
-    System Specifications
+<div style="font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:#64748b; margin-bottom:12px;">
+    System Specs
 </div>
-<div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:8px; padding:12px 14px; margin-bottom:12px;">
-    <div style="font-size:0.75rem; color:#64748b; font-weight:600; text-transform:uppercase; letter-spacing:0.04em; margin-bottom:2px;">Probe Length</div>
-    <div style="font-size:1.1rem; font-weight:700; color:#0f172a;">75 mm</div>
+<div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:8px; padding:10px 12px; margin-bottom:10px;">
+    <div style="font-size:0.7rem; color:#64748b; font-weight:600; text-transform:uppercase; letter-spacing:0.04em; margin-bottom:2px;">Probe Length</div>
+    <div style="font-size:1.05rem; font-weight:700; color:#0f172a;">75 mm</div>
 </div>
-<div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:8px; padding:12px 14px;">
-    <div style="font-size:0.75rem; color:#64748b; font-weight:600; text-transform:uppercase; letter-spacing:0.04em; margin-bottom:2px;">AI Engine</div>
-    <div style="font-size:1.1rem; font-weight:700; color:#0f172a;">Multi-Task 1D-CNN</div>
+<div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:8px; padding:10px 12px;">
+    <div style="font-size:0.7rem; color:#64748b; font-weight:600; text-transform:uppercase; letter-spacing:0.04em; margin-bottom:2px;">AI Engine</div>
+    <div style="font-size:0.86rem; font-weight:700; color:#0f172a; white-space:nowrap;">Multi-Task 1D-CNN</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -175,9 +183,9 @@ with st.sidebar:
 # 2. MAIN PAGE HEADER (Compact)
 # ==============================================================================
 st.markdown("""
-<div style="display:flex; align-items:baseline; gap:14px; margin-bottom:8px;">
-    <h1 style="font-size:1.9rem; font-weight:800; color:#0f172a; margin:0; letter-spacing:-0.02em;">TDR-AI</h1>
-    <span style="font-size:1.0rem; color:#64748b; font-weight:400;">Full-Waveform Soil Property Estimation</span>
+<div style="display:flex; align-items:baseline; gap:16px; margin-bottom:12px;">
+    <h1 style="font-size:2.1rem; font-weight:800; color:#0f172a; margin:0; letter-spacing:-0.02em;">TDR-AI</h1>
+    <span style="font-size:1.05rem; color:#64748b; font-weight:400;">Full-Waveform Soil Property Estimation</span>
 </div>
 """, unsafe_allow_html=True)
 
@@ -236,41 +244,41 @@ if uploaded_file is not None:
         disp_ecb = float(ai_pred["ecb_sm"])
         disp_ecw = float(ai_pred["ecw_sm"])
 
-    # 2-Column Balanced Container
-    col_graph, col_results = st.columns([13, 11], gap="medium")
+    # 2-Column Balanced Container: 60% Graph / 40% Results
+    col_graph, col_results = st.columns([60, 40], gap="large")
 
     # --------------------------------------------------------------------------
-    # LEFT COLUMN: Waveform Graph (Aspect ratio 13:17, ~500px x ~655px)
+    # LEFT COLUMN: Waveform Graph (Landscape ~17:13 / 4:3 Aspect Ratio)
     # --------------------------------------------------------------------------
     with col_graph:
         phys = detect_t1_t2_ka(T, V, probe_len_m=0.075)
 
-        # 13:17 Aspect Ratio -> figsize=(5.2, 6.8)
-        fig, ax = plt.subplots(figsize=(5.2, 6.8), facecolor="white")
-        ax.plot(T, V, color="#1e40af", linewidth=1.7, label="Waveform V(t)")
+        # Prominent Landscape Waveform Graph (width ~730px, height ~550px)
+        fig, ax = plt.subplots(figsize=(7.3, 5.5), facecolor="white")
+        ax.plot(T, V, color="#1d4ed8", linewidth=2.2, label="Waveform V(t)")
 
         # Reflection markers
         if phys["t1"] is not None:
             v_t1 = V[phys["t1_idx"]] if phys["t1_idx"] is not None else V[0]
-            ax.plot(phys["t1"], v_t1, 'o', color="#2563eb", markersize=6, label=f"t₁ (Entrance): {phys['t1']:.1f} ns")
-            ax.axvline(phys["t1"], color="#2563eb", linestyle=":", alpha=0.5)
+            ax.plot(phys["t1"], v_t1, 'o', color="#2563eb", markersize=7, label=f"t₁ (Entrance): {phys['t1']:.1f} ns")
+            ax.axvline(phys["t1"], color="#2563eb", linestyle=":", alpha=0.55)
 
         if phys["t2_valid"] and phys["t2"] is not None:
             v_base = phys.get("v_baseline", V[phys["trough_idx"]]) if phys.get("trough_idx") is not None else V[0]
             t2_val = phys["t2"]
-            ax.plot(t2_val, v_base, 's', color="#059669", markersize=6, label=f"t₂ (Reflection): {t2_val:.1f} ns")
-            ax.axvline(t2_val, color="#059669", linestyle="--", alpha=0.5)
+            ax.plot(t2_val, v_base, 's', color="#059669", markersize=7, label=f"t₂ (Reflection): {t2_val:.1f} ns")
+            ax.axvline(t2_val, color="#059669", linestyle="--", alpha=0.55)
 
-        ax.set_title("TDR Reflection Waveform", fontsize=10.5, fontweight="bold", color="#0f172a", pad=8)
-        ax.set_xlabel("Time (ns)", fontsize=9.0, color="#475569", labelpad=5)
-        ax.set_ylabel("Voltage (mV)", fontsize=9.0, color="#475569", labelpad=5)
-        ax.tick_params(colors="#64748b", labelsize=8.0)
+        ax.set_title("TDR Reflection Waveform", fontsize=12.5, fontweight="bold", color="#0f172a", pad=10)
+        ax.set_xlabel("Time (ns)", fontsize=10.5, fontweight="500", color="#334155", labelpad=6)
+        ax.set_ylabel("Voltage (mV)", fontsize=10.5, fontweight="500", color="#334155", labelpad=6)
+        ax.tick_params(colors="#64748b", labelsize=9.5)
         ax.spines['top'].set_visible(False)
         ax.spines['right'].set_visible(False)
         ax.spines['left'].set_color("#cbd5e1")
         ax.spines['bottom'].set_color("#cbd5e1")
-        ax.grid(True, linestyle="--", alpha=0.4, color="#e2e8f0")
-        ax.legend(loc="upper right", fontsize=8.0, frameon=True, facecolor="#ffffff", edgecolor="#e2e8f0")
+        ax.grid(True, linestyle="--", alpha=0.45, color="#cbd5e1")
+        ax.legend(loc="upper right", fontsize=9.2, frameon=True, facecolor="#ffffff", edgecolor="#cbd5e1", framealpha=0.95)
         plt.tight_layout()
         st.pyplot(fig)
         plt.close(fig)
@@ -281,12 +289,12 @@ if uploaded_file is not None:
     with col_results:
         # Header + Badge
         header_html = (
-            f'<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; height:32px;">'
-            f'<div style="font-size:1.15rem; font-weight:700; color:#0f172a; letter-spacing:-0.01em;">'
+            f'<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; height:34px;">'
+            f'<div style="font-size:1.2rem; font-weight:700; color:#0f172a; letter-spacing:-0.01em;">'
             f'Soil Physical Properties'
             f'</div>'
             f'<span style="background:{badge_bg}; color:{badge_fg}; font-size:0.75rem; font-weight:600; '
-            f'padding:3px 10px; border-radius:9999px; border:1px solid {badge_border}; letter-spacing:0.02em;">'
+            f'padding:4px 12px; border-radius:9999px; border:1px solid {badge_border}; letter-spacing:0.02em;">'
             f'{badge_text}'
             f'</span>'
             f'</div>'
