@@ -244,17 +244,17 @@ if uploaded_file is not None:
         disp_ecb = float(ai_pred["ecb_sm"])
         disp_ecw = float(ai_pred["ecw_sm"])
 
-    # 2-Column Balanced Container: 60% Graph / 40% Results
-    col_graph, col_results = st.columns([60, 40], gap="large")
+    # 2-Column Balanced Container: 63% Graph / 37% Results (Wider horizontal graph)
+    col_graph, col_results = st.columns([63, 37], gap="large")
 
     # --------------------------------------------------------------------------
-    # LEFT COLUMN: Waveform Graph (Landscape ~17:13 / 4:3 Aspect Ratio)
+    # LEFT COLUMN: Waveform Graph (Wider Landscape Aspect Ratio, Fixed [-300, +300] mV)
     # --------------------------------------------------------------------------
     with col_graph:
         phys = detect_t1_t2_ka(T, V, probe_len_m=0.075)
 
-        # Prominent Landscape Waveform Graph (width ~730px, height ~550px)
-        fig, ax = plt.subplots(figsize=(7.3, 5.5), facecolor="white")
+        # Extended Horizontal Waveform Graph (+13% wider: 8.3 x 5.5 in)
+        fig, ax = plt.subplots(figsize=(8.3, 5.5), facecolor="white")
         ax.plot(T, V, color="#1d4ed8", linewidth=2.2, label="Waveform V(t)")
 
         # Reflection markers
@@ -272,6 +272,11 @@ if uploaded_file is not None:
         ax.set_title("TDR Reflection Waveform", fontsize=12.5, fontweight="bold", color="#0f172a", pad=10)
         ax.set_xlabel("Time (ns)", fontsize=10.5, fontweight="500", color="#334155", labelpad=6)
         ax.set_ylabel("Voltage (mV)", fontsize=10.5, fontweight="500", color="#334155", labelpad=6)
+        
+        # Fixed y-axis range [-300 mV, +300 mV]
+        ax.set_ylim(-300, 300)
+        ax.set_yticks([-300, -200, -100, 0, 100, 200, 300])
+        
         ax.tick_params(colors="#64748b", labelsize=9.5)
         ax.spines['top'].set_visible(False)
         ax.spines['right'].set_visible(False)
