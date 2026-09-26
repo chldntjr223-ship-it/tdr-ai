@@ -63,6 +63,9 @@ with tab_soil:
         file_bytes = uploaded_file.getvalue()
         filename = uploaded_file.name
 
+        # Calculate SHA-256 ONCE at entry
+        file_sha256 = hashlib.sha256(file_bytes).hexdigest()
+
         # 1. Parse Waveform
         parse_res = parse_waveform_bytes(file_bytes, filename)
         if not parse_res["success"]:
@@ -72,9 +75,25 @@ with tab_soil:
         T = parse_res["time"]
         V = parse_res["voltage"]
 
-        # 2. Run Canonical Corrected V8 Multi-Task 1D-CNN Inference
+        # 2. Run Canonical Corrected V8 Multi-Task 1D-CNN Inference ONCE
         ai_pred = predict_v8_multitask(T, V)
-        gt = match_ground_truth(file_bytes)
+        gt = match_ground_truth(file_sha256)
+
+        # Build single authoritative inference result object
+        current_run = {
+            "sha256": file_sha256,
+            "filename": filename,
+            "n_points": parse_res["n_points"],
+            "time": T,
+            "voltage": V,
+            "w_percent": float(ai_pred["w_percent"]),
+            "theta_v": float(ai_pred["theta_v"]),
+            "rho_d_gcm3": float(ai_pred["rho_d_gcm3"]),
+            "ecb_sm": float(ai_pred["ecb_sm"]),
+            "ecw_sm": float(ai_pred["ecw_sm"]),
+            "gt": gt
+        }
+        st.session_state["current_inference"] = current_run
 
         # Status Badge Determination
         if gt is not None:
@@ -102,21 +121,22 @@ with tab_soil:
         info_col3.markdown(f"**🔍 Inference Status:** <span style='color:{status_color}; font-weight:bold;'>{status_badge}</span>", unsafe_allow_html=True)
 
         c1, c2, c3, c4, c5 = st.columns(5)
-        c1.metric("💧 Gravimetric Water (w)", f"{ai_pred['w_percent']:.3f} %")
-        c2.metric("🌊 Volumetric Water (θv)", f"{ai_pred['theta_v']:.4f} m³/m³")
-        c3.metric("🧱 Dry Density (ρd)", f"{ai_pred['rho_d_gcm3']:.3f} g/cm³")
-        c4.metric("⚡ Bulk EC (ECb)", f"{ai_pred['ecb_sm']:.4f} S/m")
-        c5.metric("🧪 Pore-Water EC (ECw)", f"{ai_pred['ecw_sm']:.4f} S/m")
+        c1.metric("💧 Gravimetric Water (w)", f"{current_run['w_percent']:.3f} %")
+        c2.metric("🌊 Volumetric Water (θv)", f"{current_run['theta_v']:.4f} m³/m³")
+        c3.metric("🧱 Dry Density (ρd)", f"{current_run['rho_d_gcm3']:.3f} g/cm³")
+        c4.metric("⚡ Bulk EC (ECb)", f"{current_run['ecb_sm']:.4f} S/m")
+        c5.metric("🧪 Pore-Water EC (ECw)", f"{current_run['ecw_sm']:.4f} S/m")
 
         # Result Export Button
         export_df = pd.DataFrame([{
             "Filename": filename,
-            "Gravimetric Water Content w (%)": round(ai_pred["w_percent"], 4),
-            "Volumetric Water Content θv (m3/m3)": round(ai_pred["theta_v"], 4),
-            "Dry Density ρd (g/cm3)": round(ai_pred["rho_d_gcm3"], 4),
-            "Bulk EC ECb (S/m)": round(ai_pred["ecb_sm"], 4),
-            "Pore-Water EC ECw (S/m)": round(ai_pred["ecw_sm"], 4),
-            "Model Version": "V8 Multi-Task 1D-CNN (Corrected Ground Truth, Fixed 75-mm Probe)"
+            "SHA-256": current_run["sha256"],
+            "Gravimetric Water Content w (%)": round(current_run["w_percent"], 4),
+            "Volumetric Water Content θv (m3/m3)": round(current_run["theta_v"], 4),
+            "Dry Density ρd (g/cm3)": round(current_run["rho_d_gcm3"], 4),
+            "Bulk EC ECb (S/m)": round(current_run["ecb_sm"], 4),
+            "Pore-Water EC ECw (S/m)": round(current_run["ecw_sm"], 4),
+            "Model Version": "Corrected V8 Multi-Task 1D-CNN (Fixed 75-mm Probe)"
         }])
         csv_bytes = export_df.to_csv(index=False, encoding="utf-8-sig").encode("utf-8-sig")
         st.download_button(
@@ -174,7 +194,7 @@ with tab_soil:
         # 5. Ground Truth Verification Section (Strictly Separated: Reference vs Public)
         st.markdown("---")
         st.markdown("### 🎯 Ground Truth Reference Comparison")
-        gt = match_ground_truth(file_bytes)
+        gt = current_run["gt"]
 
         if gt is not None:
             split_tag = str(gt.get("split", "reference")).lower()
@@ -197,13 +217,13 @@ with tab_soil:
                     f"Matched against experimental benchmark (`데이터 결과.xlsx` | Soil: **{gt['soil_type']}**)."
                 )
 
-            # Reference Comparison Table
+            # Reference Comparison Table - Strictly tied to current_run
             gt_table = [
-                {"Physical Property": "Gravimetric Water Content w (%)", "Ground Truth Reference": f"{gt['w']:.3f}", "V8 Prediction": f"{ai_pred['w_percent']:.3f}", "Absolute Error": f"{abs(ai_pred['w_percent'] - gt['w']):.3f}", "Relative Error (%)": f"{abs(ai_pred['w_percent'] - gt['w'])/max(1e-4, abs(gt['w']))*100:.1f} %"},
-                {"Physical Property": "Volumetric Water Content θv (m³/m³)", "Ground Truth Reference": f"{gt['theta_v']:.4f}", "V8 Prediction": f"{ai_pred['theta_v']:.4f}", "Absolute Error": f"{abs(ai_pred['theta_v'] - gt['theta_v']):.4f}", "Relative Error (%)": f"{abs(ai_pred['theta_v'] - gt['theta_v'])/max(1e-4, abs(gt['theta_v']))*100:.1f} %"},
-                {"Physical Property": "Dry Density ρd (g/cm³)", "Ground Truth Reference": f"{gt['rho_d']:.3f}", "V8 Prediction": f"{ai_pred['rho_d_gcm3']:.3f}", "Absolute Error": f"{abs(ai_pred['rho_d_gcm3'] - gt['rho_d']):.3f}", "Relative Error (%)": f"{abs(ai_pred['rho_d_gcm3'] - gt['rho_d'])/max(1e-4, abs(gt['rho_d']))*100:.1f} %"},
-                {"Physical Property": "Bulk EC ECb (S/m)", "Ground Truth Reference": f"{gt['ecb']:.4f}", "V8 Prediction": f"{ai_pred['ecb_sm']:.4f}", "Absolute Error": f"{abs(ai_pred['ecb_sm'] - gt['ecb']):.4f}", "Relative Error (%)": f"{abs(ai_pred['ecb_sm'] - gt['ecb'])/max(1e-4, abs(gt['ecb']))*100:.1f} %"},
-                {"Physical Property": "Pore-Water EC ECw (S/m)", "Ground Truth Reference": f"{gt['ecw']:.4f}", "V8 Prediction": f"{ai_pred['ecw_sm']:.4f}", "Absolute Error": f"{abs(ai_pred['ecw_sm'] - gt['ecw']):.4f}", "Relative Error (%)": f"{abs(ai_pred['ecw_sm'] - gt['ecw'])/max(1e-4, abs(gt['ecw']))*100:.1f} %"}
+                {"Physical Property": "Gravimetric Water Content w (%)", "Ground Truth Reference": f"{gt['w']:.3f}", "V8 Prediction": f"{current_run['w_percent']:.3f}", "Absolute Error": f"{abs(current_run['w_percent'] - gt['w']):.3f}", "Relative Error (%)": f"{abs(current_run['w_percent'] - gt['w'])/max(1e-4, abs(gt['w']))*100:.1f} %"},
+                {"Physical Property": "Volumetric Water Content θv (m³/m³)", "Ground Truth Reference": f"{gt['theta_v']:.4f}", "V8 Prediction": f"{current_run['theta_v']:.4f}", "Absolute Error": f"{abs(current_run['theta_v'] - gt['theta_v']):.4f}", "Relative Error (%)": f"{abs(current_run['theta_v'] - gt['theta_v'])/max(1e-4, abs(gt['theta_v']))*100:.1f} %"},
+                {"Physical Property": "Dry Density ρd (g/cm³)", "Ground Truth Reference": f"{gt['rho_d']:.3f}", "V8 Prediction": f"{current_run['rho_d_gcm3']:.3f}", "Absolute Error": f"{abs(current_run['rho_d_gcm3'] - gt['rho_d']):.3f}", "Relative Error (%)": f"{abs(current_run['rho_d_gcm3'] - gt['rho_d'])/max(1e-4, abs(gt['rho_d']))*100:.1f} %"},
+                {"Physical Property": "Bulk EC ECb (S/m)", "Ground Truth Reference": f"{gt['ecb']:.4f}", "V8 Prediction": f"{current_run['ecb_sm']:.4f}", "Absolute Error": f"{abs(current_run['ecb_sm'] - gt['ecb']):.4f}", "Relative Error (%)": f"{abs(current_run['ecb_sm'] - gt['ecb'])/max(1e-4, abs(gt['ecb']))*100:.1f} %"},
+                {"Physical Property": "Pore-Water EC ECw (S/m)", "Ground Truth Reference": f"{gt['ecw']:.4f}", "V8 Prediction": f"{current_run['ecw_sm']:.4f}", "Absolute Error": f"{abs(current_run['ecw_sm'] - gt['ecw']):.4f}", "Relative Error (%)": f"{abs(current_run['ecw_sm'] - gt['ecw'])/max(1e-4, abs(gt['ecw']))*100:.1f} %"}
             ]
             st.table(pd.DataFrame(gt_table))
         else:
@@ -212,12 +232,11 @@ with tab_soil:
         # 6. Auxiliary Modules (Collapsible)
         st.markdown("---")
         with st.expander("🏛️ Auxiliary 1: Legacy V1 Baseline (Leave-One-Out Nearest Reference)", expanded=False):
-            file_sha256 = hashlib.sha256(file_bytes).hexdigest()
             base_loo = run_legacy_baseline(
                 T, V,
                 probe_length_cm=7.5,
                 leave_one_out=True,
-                uploaded_sha256=file_sha256,
+                uploaded_sha256=current_run["sha256"],
                 exclude_filename=filename,
                 exclude_soil=gt["soil_type"] if gt else None
             )

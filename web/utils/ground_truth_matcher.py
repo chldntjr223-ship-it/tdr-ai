@@ -17,14 +17,17 @@ def _load_index():
     else:
         _GT_INDEX = {}
 
-def match_ground_truth(file_bytes):
+def match_ground_truth(file_bytes_or_sha256):
     """
-    Matches uploaded waveform bytes against the canonical reference index via SHA-256.
+    Matches uploaded waveform bytes or precomputed SHA-256 against the canonical reference index.
     Returns: ground truth dict if known reference waveform, otherwise None (public inference mode).
     """
     global _GT_INDEX
     if _GT_INDEX is None:
         _load_index()
-    h = hashlib.sha256(file_bytes).hexdigest()
+    if isinstance(file_bytes_or_sha256, str):
+        h = file_bytes_or_sha256.lower().strip()
+    else:
+        h = hashlib.sha256(file_bytes_or_sha256).hexdigest()
     return _GT_INDEX.get(h, None)
 
