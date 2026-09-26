@@ -17,6 +17,17 @@ from web.utils.ground_truth_matcher import match_ground_truth
 from web.utils.ai_infer import predict_v8_multitask, TARGET_LABELS
 from web.utils.water_reference_loader import get_water_reference_data
 
+def format_ecw(val):
+    if val is None:
+        return "N/A"
+    s = f"{val:.5f}".rstrip('0')
+    if s.endswith('.'):
+        s = s[:-1]
+    parts = s.split('.')
+    if len(parts) == 2 and len(parts[1]) < 4:
+        s = f"{val:.4f}"
+    return s
+
 st.set_page_config(
     page_title="TDR-AI Soil Property Estimation",
     page_icon="⚡",
@@ -79,6 +90,21 @@ with tab_soil:
         ai_pred = predict_v8_multitask(T, V)
         gt = match_ground_truth(file_sha256)
 
+        if gt is not None:
+            display_mode = "Experimental Reference"
+            displayed_w = float(gt["w"])
+            displayed_theta_v = float(gt["theta_v"])
+            displayed_rho_d = float(gt["rho_d"])
+            displayed_ecb = float(gt["ecb"])
+            displayed_ecw = float(gt["ecw"])
+        else:
+            display_mode = "AI Prediction"
+            displayed_w = float(ai_pred["w_percent"])
+            displayed_theta_v = float(ai_pred["theta_v"])
+            displayed_rho_d = float(ai_pred["rho_d_gcm3"])
+            displayed_ecb = float(ai_pred["ecb_sm"])
+            displayed_ecw = float(ai_pred["ecw_sm"])
+
         # Build single authoritative inference result object
         current_run = {
             "sha256": file_sha256,
@@ -86,6 +112,20 @@ with tab_soil:
             "n_points": parse_res["n_points"],
             "time": T,
             "voltage": V,
+            "display_mode": display_mode,
+            # Top card displayed values:
+            "displayed_w": displayed_w,
+            "displayed_theta_v": displayed_theta_v,
+            "displayed_rho_d": displayed_rho_d,
+            "displayed_ecb": displayed_ecb,
+            "displayed_ecw": displayed_ecw,
+            # Raw AI predictions:
+            "ai_w_percent": float(ai_pred["w_percent"]),
+            "ai_theta_v": float(ai_pred["theta_v"]),
+            "ai_rho_d_gcm3": float(ai_pred["rho_d_gcm3"]),
+            "ai_ecb_sm": float(ai_pred["ecb_sm"]),
+            "ai_ecw_sm": float(ai_pred["ecw_sm"]),
+            # Compatibility aliases
             "w_percent": float(ai_pred["w_percent"]),
             "theta_v": float(ai_pred["theta_v"]),
             "rho_d_gcm3": float(ai_pred["rho_d_gcm3"]),
@@ -111,9 +151,13 @@ with tab_soil:
             status_badge = "🌐 Public Inference Mode [External / Field Specimen]"
             status_color = "#666666"
 
-        # 3. TOP SECTION: 5 Primary Geotechnical Predictions
+        # 3. TOP SECTION: Primary Geotechnical Properties
         st.markdown("---")
-        st.markdown("### 🎯 Estimated Soil Physical Properties")
+        if gt is not None:
+            top_title = "Experimental Reference Soil Properties"
+        else:
+            top_title = "Estimated Soil Properties"
+        st.markdown(f"### 📋 {top_title}" if gt is not None else f"### 🎯 {top_title}")
         
         info_col1, info_col2, info_col3 = st.columns([2, 2, 2])
         info_col1.markdown(f"**📄 Uploaded Waveform:** `{filename}` ({parse_res['n_points']} pts)")
@@ -121,28 +165,57 @@ with tab_soil:
         info_col3.markdown(f"**🔍 Inference Status:** <span style='color:{status_color}; font-weight:bold;'>{status_badge}</span>", unsafe_allow_html=True)
 
         c1, c2, c3, c4, c5 = st.columns(5)
-        c1.metric("💧 Gravimetric Water (w)", f"{current_run['w_percent']:.3f} %")
-        c2.metric("🌊 Volumetric Water (θv)", f"{current_run['theta_v']:.4f} m³/m³")
-        c3.metric("🧱 Dry Density (ρd)", f"{current_run['rho_d_gcm3']:.3f} g/cm³")
-        c4.metric("⚡ Bulk EC (ECb)", f"{current_run['ecb_sm']:.4f} S/m")
-        c5.metric("🧪 Pore-Water EC (ECw)", f"{current_run['ecw_sm']:.4f} S/m")
+        c1.metric("💧 Gravimetric Water (w)", f"{current_run['displayed_w']:.3f} %")
+        c2.metric("🌊 Volumetric Water (θv)", f"{current_run['displayed_theta_v']:.4f} m³/m³")
+        c3.metric("🧱 Dry Density (ρd)", f"{current_run['displayed_rho_d']:.3f} g/cm³")
+        c4.metric("⚡ Bulk EC (ECb)", f"{current_run['displayed_ecb']:.4f} S/m")
+        c5.metric("🧪 Pore-Water EC (ECw)", f"{format_ecw(current_run['displayed_ecw'])} S/m")
 
-        # Result Export Button
-        export_df = pd.DataFrame([{
-            "Filename": filename,
-            "SHA-256": current_run["sha256"],
-            "Gravimetric Water Content w (%)": round(current_run["w_percent"], 4),
-            "Volumetric Water Content θv (m3/m3)": round(current_run["theta_v"], 4),
-            "Dry Density ρd (g/cm3)": round(current_run["rho_d_gcm3"], 4),
-            "Bulk EC ECb (S/m)": round(current_run["ecb_sm"], 4),
-            "Pore-Water EC ECw (S/m)": round(current_run["ecw_sm"], 4),
-            "Model Version": "Corrected V8 Multi-Task 1D-CNN (Fixed 75-mm Probe)"
-        }])
+        # Result Export Button (Dual columns for Known Reference)
+        if gt is not None:
+            export_df = pd.DataFrame([{
+                "Filename": filename,
+                "SHA-256": current_run["sha256"],
+                "Display Mode": current_run["display_mode"],
+                "Soil Type": gt.get("soil_type", "Unknown"),
+                "Dataset Split": gt.get("split", "Reference"),
+                # Experimental Reference Values
+                "Reference Gravimetric Water w (%)": round(current_run["displayed_w"], 4),
+                "Reference Volumetric Water θv (m3/m3)": round(current_run["displayed_theta_v"], 4),
+                "Reference Dry Density ρd (g/cm3)": round(current_run["displayed_rho_d"], 4),
+                "Reference Bulk EC ECb (S/m)": round(current_run["displayed_ecb"], 4),
+                "Reference Pore-Water EC ECw (S/m)": round(current_run["displayed_ecw"], 5),
+                # AI Predicted Values (V8 Multi-Task CNN)
+                "AI Predicted w (%)": round(current_run["ai_w_percent"], 4),
+                "AI Predicted θv (m3/m3)": round(current_run["ai_theta_v"], 4),
+                "AI Predicted ρd (g/cm3)": round(current_run["ai_rho_d_gcm3"], 4),
+                "AI Predicted ECb (S/m)": round(current_run["ai_ecb_sm"], 4),
+                "AI Predicted ECw (S/m)": round(current_run["ai_ecw_sm"], 4),
+                # Absolute Errors
+                "Absolute Error w (%)": round(abs(current_run["ai_w_percent"] - current_run["displayed_w"]), 4),
+                "Absolute Error θv (m3/m3)": round(abs(current_run["ai_theta_v"] - current_run["displayed_theta_v"]), 4),
+                "Absolute Error ρd (g/cm3)": round(abs(current_run["ai_rho_d_gcm3"] - current_run["displayed_rho_d"]), 4),
+                "Absolute Error ECb (S/m)": round(abs(current_run["ai_ecb_sm"] - current_run["displayed_ecb"]), 4),
+                "Absolute Error ECw (S/m)": round(abs(current_run["ai_ecw_sm"] - current_run["displayed_ecw"]), 5),
+                "Model Version": "Corrected V8 Multi-Task 1D-CNN (Fixed 75-mm Probe)"
+            }])
+        else:
+            export_df = pd.DataFrame([{
+                "Filename": filename,
+                "SHA-256": current_run["sha256"],
+                "Display Mode": current_run["display_mode"],
+                "AI Predicted Gravimetric Water w (%)": round(current_run["ai_w_percent"], 4),
+                "AI Predicted Volumetric Water θv (m3/m3)": round(current_run["ai_theta_v"], 4),
+                "AI Predicted Dry Density ρd (g/cm3)": round(current_run["ai_rho_d_gcm3"], 4),
+                "AI Predicted Bulk EC ECb (S/m)": round(current_run["ai_ecb_sm"], 4),
+                "AI Predicted Pore-Water EC ECw (S/m)": round(current_run["ai_ecw_sm"], 4),
+                "Model Version": "Corrected V8 Multi-Task 1D-CNN (Fixed 75-mm Probe)"
+            }])
         csv_bytes = export_df.to_csv(index=False, encoding="utf-8-sig").encode("utf-8-sig")
         st.download_button(
-            label="📥 Download Prediction Results (CSV)",
+            label="📥 Download Results (CSV)",
             data=csv_bytes,
-            file_name=f"tdr_prediction_{os.path.splitext(filename)[0]}.csv",
+            file_name=f"tdr_{'reference' if gt else 'prediction'}_{os.path.splitext(filename)[0]}.csv",
             mime="text/csv"
         )
 
@@ -191,9 +264,9 @@ with tab_soil:
         if not phys["t2_valid"]:
             st.warning(f"⚠️ **Reflection Pulse Attenuated**: High conductivity dissipates the rod-end reflection pulse ({phys['reason']}).")
 
-        # 5. Ground Truth Verification Section (Strictly Separated: Reference vs Public)
+        # 5. AI Prediction Comparison & Ground Truth Verification Section
         st.markdown("---")
-        st.markdown("### 🎯 Ground Truth Reference Comparison")
+        st.markdown("### 📊 AI Prediction Comparison")
         gt = current_run["gt"]
 
         if gt is not None:
@@ -217,13 +290,21 @@ with tab_soil:
                     f"Matched against experimental benchmark (`데이터 결과.xlsx` | Soil: **{gt['soil_type']}**)."
                 )
 
+            st.markdown("##### 🤖 Corrected V8 1D-CNN Model Predictions")
+            c_ai1, c_ai2, c_ai3, c_ai4, c_ai5 = st.columns(5)
+            c_ai1.metric("V8 Pred w", f"{current_run['ai_w_percent']:.3f} %")
+            c_ai2.metric("V8 Pred θv", f"{current_run['ai_theta_v']:.4f} m³/m³")
+            c_ai3.metric("V8 Pred ρd", f"{current_run['ai_rho_d_gcm3']:.3f} g/cm³")
+            c_ai4.metric("V8 Pred ECb", f"{current_run['ai_ecb_sm']:.4f} S/m")
+            c_ai5.metric("V8 Pred ECw", f"{current_run['ai_ecw_sm']:.4f} S/m")
+
             # Reference Comparison Table - Strictly tied to current_run
             gt_table = [
-                {"Physical Property": "Gravimetric Water Content w (%)", "Ground Truth Reference": f"{gt['w']:.3f}", "V8 Prediction": f"{current_run['w_percent']:.3f}", "Absolute Error": f"{abs(current_run['w_percent'] - gt['w']):.3f}", "Relative Error (%)": f"{abs(current_run['w_percent'] - gt['w'])/max(1e-4, abs(gt['w']))*100:.1f} %"},
-                {"Physical Property": "Volumetric Water Content θv (m³/m³)", "Ground Truth Reference": f"{gt['theta_v']:.4f}", "V8 Prediction": f"{current_run['theta_v']:.4f}", "Absolute Error": f"{abs(current_run['theta_v'] - gt['theta_v']):.4f}", "Relative Error (%)": f"{abs(current_run['theta_v'] - gt['theta_v'])/max(1e-4, abs(gt['theta_v']))*100:.1f} %"},
-                {"Physical Property": "Dry Density ρd (g/cm³)", "Ground Truth Reference": f"{gt['rho_d']:.3f}", "V8 Prediction": f"{current_run['rho_d_gcm3']:.3f}", "Absolute Error": f"{abs(current_run['rho_d_gcm3'] - gt['rho_d']):.3f}", "Relative Error (%)": f"{abs(current_run['rho_d_gcm3'] - gt['rho_d'])/max(1e-4, abs(gt['rho_d']))*100:.1f} %"},
-                {"Physical Property": "Bulk EC ECb (S/m)", "Ground Truth Reference": f"{gt['ecb']:.4f}", "V8 Prediction": f"{current_run['ecb_sm']:.4f}", "Absolute Error": f"{abs(current_run['ecb_sm'] - gt['ecb']):.4f}", "Relative Error (%)": f"{abs(current_run['ecb_sm'] - gt['ecb'])/max(1e-4, abs(gt['ecb']))*100:.1f} %"},
-                {"Physical Property": "Pore-Water EC ECw (S/m)", "Ground Truth Reference": f"{gt['ecw']:.4f}", "V8 Prediction": f"{current_run['ecw_sm']:.4f}", "Absolute Error": f"{abs(current_run['ecw_sm'] - gt['ecw']):.4f}", "Relative Error (%)": f"{abs(current_run['ecw_sm'] - gt['ecw'])/max(1e-4, abs(gt['ecw']))*100:.1f} %"}
+                {"Physical Property": "Gravimetric Water Content w (%)", "Ground Truth Reference": f"{gt['w']:.3f} %", "V8 Prediction": f"{current_run['ai_w_percent']:.3f} %", "Absolute Error": f"{abs(current_run['ai_w_percent'] - gt['w']):.3f} %", "Relative Error (%)": f"{abs(current_run['ai_w_percent'] - gt['w'])/max(1e-4, abs(gt['w']))*100:.1f} %"},
+                {"Physical Property": "Volumetric Water Content θv (m³/m³)", "Ground Truth Reference": f"{gt['theta_v']:.4f}", "V8 Prediction": f"{current_run['ai_theta_v']:.4f}", "Absolute Error": f"{abs(current_run['ai_theta_v'] - gt['theta_v']):.4f}", "Relative Error (%)": f"{abs(current_run['ai_theta_v'] - gt['theta_v'])/max(1e-4, abs(gt['theta_v']))*100:.1f} %"},
+                {"Physical Property": "Dry Density ρd (g/cm³)", "Ground Truth Reference": f"{gt['rho_d']:.3f} g/cm³", "V8 Prediction": f"{current_run['ai_rho_d_gcm3']:.3f} g/cm³", "Absolute Error": f"{abs(current_run['ai_rho_d_gcm3'] - gt['rho_d']):.3f} g/cm³", "Relative Error (%)": f"{abs(current_run['ai_rho_d_gcm3'] - gt['rho_d'])/max(1e-4, abs(gt['rho_d']))*100:.1f} %"},
+                {"Physical Property": "Bulk EC ECb (S/m)", "Ground Truth Reference": f"{gt['ecb']:.4f} S/m", "V8 Prediction": f"{current_run['ai_ecb_sm']:.4f} S/m", "Absolute Error": f"{abs(current_run['ai_ecb_sm'] - gt['ecb']):.4f} S/m", "Relative Error (%)": f"{abs(current_run['ai_ecb_sm'] - gt['ecb'])/max(1e-4, abs(gt['ecb']))*100:.1f} %"},
+                {"Physical Property": "Pore-Water EC ECw (S/m)", "Ground Truth Reference": f"{format_ecw(gt['ecw'])} S/m", "V8 Prediction": f"{current_run['ai_ecw_sm']:.4f} S/m", "Absolute Error": f"{abs(current_run['ai_ecw_sm'] - gt['ecw']):.4f} S/m", "Relative Error (%)": f"{abs(current_run['ai_ecw_sm'] - gt['ecw'])/max(1e-4, abs(gt['ecw']))*100:.1f} %"}
             ]
             st.table(pd.DataFrame(gt_table))
         else:
