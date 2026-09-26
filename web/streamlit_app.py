@@ -136,26 +136,31 @@ def format_ecw(val):
         s = f"{val:.4f}"
     return s
 
-# Lucide-style SVG Icons (28px)
-ICON_WATER_DROP = '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path></svg>'
-ICON_WATER_WAVES = '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12c2.5-3 5.5-3 8 0s5.5 3 8 0 5.5-3 8 0"></path><path d="M2 17c2.5-3 5.5-3 8 0s5.5 3 8 0 5.5-3 8 0"></path></svg>'
-ICON_DENSITY_CUBE = '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>'
-ICON_BOLT = '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>'
-ICON_FLASK = '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2v7.31"></path><path d="M14 2v7.31"></path><path d="M8.5 2h7"></path><path d="M14 9.3a6.5 6.5 0 1 1-4 0"></path><path d="M5.52 16h12.96"></path></svg>'
+# Lucide-style SVG Icons with distinct engineering accent colors
+# 1. Gravimetric Water Content: Cyan/Sky Blue
+ICON_WATER_DROP = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0284c7" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path></svg>'
+# 2. Volumetric Water Content: Emerald/Teal
+ICON_WATER_WAVES = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0d9488" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12c2.5-3 5.5-3 8 0s5.5 3 8 0 5.5-3 8 0"></path><path d="M2 17c2.5-3 5.5-3 8 0s5.5 3 8 0 5.5-3 8 0"></path></svg>'
+# 3. Dry Density: Warm Amber/Ochre
+ICON_DENSITY_CUBE = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>'
+# 4. Bulk Electrical Conductivity: Indigo/Electric Violet
+ICON_BOLT = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>'
+# 5. Pore Water Electrical Conductivity: Rose/Crimson
+ICON_FLASK = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#e11d48" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2v7.31"></path><path d="M14 2v7.31"></path><path d="M8.5 2h7"></path><path d="M14 9.3a6.5 6.5 0 1 1-4 0"></path><path d="M5.52 16h12.96"></path></svg>'
 
-def render_result_card(icon_svg, title, value_str, unit_str):
+def render_result_card(icon_svg, title_html, value_str, unit_str, bg_color="#f0f9ff", border_color="#bae6fd"):
     card_html = (
         f'<div class="prop-card">'
-        f'<div style="display:flex; align-items:center; gap:14px;">'
-        f'<div style="display:flex; align-items:center; justify-content:center; width:40px; height:40px; '
-        f'border-radius:8px; background:#eff6ff; flex-shrink:0;">'
+        f'<div style="display:flex; align-items:center; gap:12px; min-width:0;">'
+        f'<div style="display:flex; align-items:center; justify-content:center; width:38px; height:38px; '
+        f'border-radius:9px; background:{bg_color}; border:1px solid {border_color}; flex-shrink:0;">'
         f'{icon_svg}'
         f'</div>'
-        f'<div style="font-size:0.95rem; font-weight:600; color:#1e293b; line-height:1.2;">{title}</div>'
+        f'<div style="font-size:0.87rem; font-weight:600; color:#1e293b; line-height:1.2; white-space:nowrap;">{title_html}</div>'
         f'</div>'
-        f'<div style="text-align:right; flex-shrink:0; margin-left:12px;">'
-        f'<span style="font-size:1.5rem; font-weight:700; color:#0f172a; letter-spacing:-0.02em;">{value_str}</span>'
-        f'<span style="font-size:0.85rem; font-weight:500; color:#64748b; margin-left:5px;">{unit_str}</span>'
+        f'<div style="text-align:right; flex-shrink:0; margin-left:auto; padding-left:8px;">'
+        f'<span style="font-size:1.6rem; font-weight:800; color:#0f172a; letter-spacing:-0.02em; font-variant-numeric:tabular-nums;">{value_str}</span>'
+        f'<span style="font-size:0.8rem; font-weight:500; color:#94a3b8; margin-left:5px;">{unit_str}</span>'
         f'</div>'
         f'</div>'
     )
@@ -309,41 +314,51 @@ if uploaded_file is not None:
         # Card 1: Gravimetric Water Content (w)
         st.markdown(render_result_card(
             ICON_WATER_DROP,
-            "Gravimetric Water Content (w)",
+            "Gravimetric Water Content (<i>w</i>)",
             f"{disp_w:.3f}",
-            "%"
+            "%",
+            bg_color="#f0f9ff",
+            border_color="#bae6fd"
         ), unsafe_allow_html=True)
 
         # Card 2: Volumetric Water Content (θv)
         st.markdown(render_result_card(
             ICON_WATER_WAVES,
-            "Volumetric Water Content (θv)",
+            "Volumetric Water Content (<i>θ</i><sub>v</sub>)",
             f"{disp_th:.4f}",
-            "m³/m³"
+            "m³/m³",
+            bg_color="#f0fdfa",
+            border_color="#99f6e4"
         ), unsafe_allow_html=True)
 
         # Card 3: Dry Density (ρd)
         st.markdown(render_result_card(
             ICON_DENSITY_CUBE,
-            "Dry Density (ρd)",
+            "Dry Density (<i>ρ</i><sub>d</sub>)",
             f"{disp_rho:.3f}",
-            "g/cm³"
+            "g/cm³",
+            bg_color="#fffbeb",
+            border_color="#fde68a"
         ), unsafe_allow_html=True)
 
         # Card 4: Bulk Electrical Conductivity (ECb)
         st.markdown(render_result_card(
             ICON_BOLT,
-            "Bulk Electrical Conductivity (ECb)",
+            "Bulk Electrical Conductivity (<i>EC</i><sub>b</sub>)",
             f"{disp_ecb:.4f}",
-            "S/m"
+            "S/m",
+            bg_color="#eef2ff",
+            border_color="#c7d2fe"
         ), unsafe_allow_html=True)
 
-        # Card 5: Pore-Water Electrical Conductivity (ECw)
+        # Card 5: Pore Water Electrical Conductivity (ECw)
         st.markdown(render_result_card(
             ICON_FLASK,
-            "Pore-Water Electrical Conductivity (ECw)",
+            "Pore Water Electrical Conductivity (<i>EC</i><sub>w</sub>)",
             f"{format_ecw(disp_ecw)}",
-            "S/m"
+            "S/m",
+            bg_color="#fff1f2",
+            border_color="#fecdd3"
         ), unsafe_allow_html=True)
 
         # Download Results Button
@@ -359,7 +374,7 @@ if uploaded_file is not None:
                 "Reference Volumetric Water θv (m3/m3)": round(disp_th, 4),
                 "Reference Dry Density ρd (g/cm3)": round(disp_rho, 4),
                 "Reference Bulk EC ECb (S/m)": round(disp_ecb, 4),
-                "Reference Pore-Water EC ECw (S/m)": round(disp_ecw, 5),
+                "Reference Pore Water EC ECw (S/m)": round(disp_ecw, 5),
                 # AI Predictions
                 "AI Predicted w (%)": round(float(ai_pred["w_percent"]), 4),
                 "AI Predicted θv (m3/m3)": round(float(ai_pred["theta_v"]), 4),
@@ -383,7 +398,7 @@ if uploaded_file is not None:
                 "AI Predicted Volumetric Water θv (m3/m3)": round(float(ai_pred["theta_v"]), 4),
                 "AI Predicted Dry Density ρd (g/cm3)": round(float(ai_pred["rho_d_gcm3"]), 4),
                 "AI Predicted Bulk EC ECb (S/m)": round(float(ai_pred["ecb_sm"]), 4),
-                "AI Predicted Pore-Water EC ECw (S/m)": round(float(ai_pred["ecw_sm"]), 4),
+                "AI Predicted Pore Water EC ECw (S/m)": round(float(ai_pred["ecw_sm"]), 4),
                 "Model Version": "Multi-Task 1D-CNN (Fixed 75-mm Probe)"
             }])
 
