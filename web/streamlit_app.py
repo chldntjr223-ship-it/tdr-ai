@@ -151,16 +151,16 @@ ICON_FLASK = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke
 def render_result_card(icon_svg, title_html, value_str, unit_str, bg_color="#f0f9ff", border_color="#bae6fd"):
     card_html = (
         f'<div class="prop-card">'
-        f'<div style="display:flex; align-items:center; gap:12px; min-width:0;">'
+        f'<div style="display:flex; align-items:center; gap:12px; min-width:0; flex:1;">'
         f'<div style="display:flex; align-items:center; justify-content:center; width:38px; height:38px; '
         f'border-radius:9px; background:{bg_color}; border:1px solid {border_color}; flex-shrink:0;">'
         f'{icon_svg}'
         f'</div>'
-        f'<div style="font-size:0.87rem; font-weight:600; color:#1e293b; line-height:1.2; white-space:nowrap;">{title_html}</div>'
+        f'<div style="font-size:0.83rem; font-weight:600; color:#1e293b; line-height:1.25;">{title_html}</div>'
         f'</div>'
-        f'<div style="text-align:right; flex-shrink:0; margin-left:auto; padding-left:8px;">'
-        f'<span style="font-size:1.6rem; font-weight:800; color:#0f172a; letter-spacing:-0.02em; font-variant-numeric:tabular-nums;">{value_str}</span>'
-        f'<span style="font-size:0.8rem; font-weight:500; color:#94a3b8; margin-left:5px;">{unit_str}</span>'
+        f'<div style="text-align:right; flex-shrink:0; margin-left:12px;">'
+        f'<span style="font-size:1.45rem; font-weight:800; color:#0f172a; letter-spacing:-0.02em; font-variant-numeric:tabular-nums;">{value_str}</span>'
+        f'<span style="font-size:0.8rem; font-weight:500; color:#94a3b8; margin-left:4px;">{unit_str}</span>'
         f'</div>'
         f'</div>'
     )
@@ -288,7 +288,15 @@ if uploaded_file is not None:
         ax.spines['left'].set_color("#cbd5e1")
         ax.spines['bottom'].set_color("#cbd5e1")
         ax.grid(True, linestyle="--", alpha=0.45, color="#cbd5e1")
-        ax.legend(loc="upper right", fontsize=9.2, frameon=True, facecolor="#ffffff", edgecolor="#cbd5e1", framealpha=0.95)
+        ax.legend(
+            loc="upper left", 
+            bbox_to_anchor=(0.01, 0.99),
+            fontsize=9.2, 
+            frameon=True, 
+            facecolor="#ffffff", 
+            edgecolor="#cbd5e1", 
+            framealpha=0.95
+        )
         plt.tight_layout()
         st.pyplot(fig)
         plt.close(fig)
@@ -361,46 +369,14 @@ if uploaded_file is not None:
             border_color="#fecdd3"
         ), unsafe_allow_html=True)
 
-        # Download Results Button
-        if gt is not None:
-            export_df = pd.DataFrame([{
-                "Filename": filename,
-                "SHA-256": file_sha256,
-                "Display Mode": display_mode,
-                "Soil Type": gt.get("soil_type", "Unknown"),
-                "Dataset Split": gt.get("split", "Reference"),
-                # Reference Values
-                "Reference Gravimetric Water w (%)": round(disp_w, 4),
-                "Reference Volumetric Water θv (m3/m3)": round(disp_th, 4),
-                "Reference Dry Density ρd (g/cm3)": round(disp_rho, 4),
-                "Reference Bulk EC ECb (S/m)": round(disp_ecb, 4),
-                "Reference Pore Water EC ECw (S/m)": round(disp_ecw, 5),
-                # AI Predictions
-                "AI Predicted w (%)": round(float(ai_pred["w_percent"]), 4),
-                "AI Predicted θv (m3/m3)": round(float(ai_pred["theta_v"]), 4),
-                "AI Predicted ρd (g/cm3)": round(float(ai_pred["rho_d_gcm3"]), 4),
-                "AI Predicted ECb (S/m)": round(float(ai_pred["ecb_sm"]), 4),
-                "AI Predicted ECw (S/m)": round(float(ai_pred["ecw_sm"]), 4),
-                # Errors
-                "Absolute Error w (%)": round(abs(float(ai_pred["w_percent"]) - disp_w), 4),
-                "Absolute Error θv (m3/m3)": round(abs(float(ai_pred["theta_v"]) - disp_th), 4),
-                "Absolute Error ρd (g/cm3)": round(abs(float(ai_pred["rho_d_gcm3"]) - disp_rho), 4),
-                "Absolute Error ECb (S/m)": round(abs(float(ai_pred["ecb_sm"]) - disp_ecb), 4),
-                "Absolute Error ECw (S/m)": round(abs(float(ai_pred["ecw_sm"]) - disp_ecw), 5),
-                "Model Version": "Multi-Task 1D-CNN (Fixed 75-mm Probe)"
-            }])
-        else:
-            export_df = pd.DataFrame([{
-                "Filename": filename,
-                "SHA-256": file_sha256,
-                "Display Mode": display_mode,
-                "AI Predicted Gravimetric Water w (%)": round(float(ai_pred["w_percent"]), 4),
-                "AI Predicted Volumetric Water θv (m3/m3)": round(float(ai_pred["theta_v"]), 4),
-                "AI Predicted Dry Density ρd (g/cm3)": round(float(ai_pred["rho_d_gcm3"]), 4),
-                "AI Predicted Bulk EC ECb (S/m)": round(float(ai_pred["ecb_sm"]), 4),
-                "AI Predicted Pore Water EC ECw (S/m)": round(float(ai_pred["ecw_sm"]), 4),
-                "Model Version": "Multi-Task 1D-CNN (Fixed 75-mm Probe)"
-            }])
+        # Download Results Button - Simplified 5 Soil Properties
+        export_df = pd.DataFrame([{
+            "w (%)": disp_w,
+            "theta_v (m3/m3)": disp_th,
+            "rho_d (g/cm3)": disp_rho,
+            "ECb (S/m)": disp_ecb,
+            "ECw (S/m)": disp_ecw
+        }])
 
         csv_bytes = export_df.to_csv(index=False, encoding="utf-8-sig").encode("utf-8-sig")
         st.download_button(
